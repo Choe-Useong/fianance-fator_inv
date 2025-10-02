@@ -151,3 +151,12 @@ python 코드/9_백테스트.py
 - 리포트 스크립트 추가(성과표/드로우다운/턴오버/히트맵 등)
 - 유니버스·거래비용·상장폐지 보정 등 실거래 제약 반영
 - 테스트/검증용 샘플 데이터셋 제작(경량 CSV/Parquet)
+
+---
+
+## 백테스트 결과
+
+- 아래 이미지는 `코드/9_백테스트.py` 실행 시 `docs/portfolio_vs_benchmark.png`로 자동 저장됩니다.
+- 수치 요약은 `docs/backtest_summary.md`에서 확인할 수 있습니다.
+
+![Portfolio vs Benchmark](docs/portfolio_vs_benchmark.png)
