@@ -17,8 +17,8 @@
 
 - `코드/` 파이프라인 스크립트 모음
   - `1_재무제표정리.py` 원천 DART .txt → Parquet 통합(`ALL.parquet`)
-  - `2_검증/표준화.py` 보고서명 표준화, 연결/별도 판별, 주재무 여부 추가
-  - `3_주재무판별.py` 주재무제표 여부 판정
+  - `2_파생변수생성.py` 보고서명 표준화, 연결/별도 판별, 주재무 여부 추가
+  - `3_주재무사업보고서추출.py` 주재무제표의 사업보고서 추출
   - `4_항목명통일.py` `ifrs_`/`ifrs-full_` 접두 정규화 → `계정코드_정규화` 추가 저장
   - `5_팩터추출.py` 회계 항목 추출(지배주주지분, 매출총이익 등) 및 스켈레톤 생성(비금융, 12월 결산)
   - `6_시총정보.py` pykrx로 6월 말 기준 시총/거래대금 스냅샷 → 팩터 통합(`SIZE, BM, GP_A, TURNOVER`)
@@ -47,31 +47,20 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
 
 ---
 
-## 입력 데이터·경로
-
-각 스크립트 상단에 입·출력 경로 상수가 정의되어 있습니다(Windows 절대경로). 환경에 맞게 수정하세요.
-- 원천 DART 텍스트: 작업 폴더 하위 `.txt` (cp949)
-- 중간/최종 산출물: Parquet (`ALL.parquet`, `주재무_IFRS_자체전처리.parquet`, `재무요약_스켈레톤.parquet`, `팩터통합_최종.parquet`, `팩터통합_최종_withMOM.parquet`, `월초_수정종가.parquet` 등)
-- 벤치마크: `^KS11` (yfinance, 월빈도)
-
-> 참고: 추후 `config.py` 또는 환경변수 기반으로 경로 통합을 원하시면 요청 주세요.
-
----
-
 ## 엔드투엔드 실행 순서
 
 ### 1) 원본데이터 통합 — `코드/1_재무제표정리.py`
 - cp949 텍스트(.txt) 다건을 배치로 읽어서 `ALL.parquet` 저장
 - 헤더 정리, 공백/토큰 정규화 포함
 
-### 2) 보고서종류/주재무 정리 — `코드/2_검증/표준화.py`
+### 2) 보고서종류/주재무 정리 — `코드/2_파생변수생성.py`
 - 보고서명 정규화, 연결/별도 판별(`연결`, `별도`, `기타`)
 - 기업×보고기간 단위로 주재무(연결 우선, 없으면 별도)
 
-### 3) 주재무·IFRS·시장 필터 — `코드/3_주재무IFRS추출.py`
+### 3) 주재무·IFRS·시장 필터 — `코드/3_주재무사업보고서추출.py`
 - 주재무 + 목표 보고서(예: 연결재무제표) + 대상시장(KOSPI/KOSDAQ) 필터링
 
-### 4) IFRS 태그 정규화 — `코드/4_주재무IFRS세분화정리.py`
+### 4) IFRS 태그 정규화 — `코드/4_항목명통일.py`
 - `ifrs_`/`ifrs-full_` 접두 제거 → `계정코드_정규화` 열 추가 저장
 
 ### 5) 회계 항목 추출 — `코드/5_팩터추출.py`
@@ -102,7 +91,7 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
 
 ## 팩터 정의 요약
 
-- `SIZE`     = ln(시가총액) [6월 말 스냅샷]
+- `SIZE`     = ln(시가총액)
 - `BM`       = 지배주주지분 / 시가총액 (Book-to-Market)
 - `GP_A`     = 매출총이익 / 자산총계 (Gross Profit over Assets)
 - `TURNOVER` = 거래대금 / 시가총액
@@ -118,9 +107,9 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
 2) 순서대로 실행합니다.
 ```
 python 코드/1_재무제표정리.py
-python 코드/2_검증/표준화.py
-python 코드/3_주재무IFRS추출.py
-python 코드/4_주재무IFRS세분화정리.py
+python 코드/2_파생변수생성.py
+python 코드/3_주재무사업보고서추출.py
+python 코드/4_항목명통일.py
 python 코드/5_팩터추출.py
 python 코드/6_시총정보.py
 python 코드/7_수정주가.py
