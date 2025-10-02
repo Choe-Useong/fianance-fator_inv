@@ -1,12 +1,12 @@
-# Finance Factor Investing (KRX) — 재무제표→팩터→백테스트 파이프라인
+# Finance Factor Investing — 재무제표→팩터→백테스트 파이프라인
 
-이 저장소는 전자공시(DART) 텍스트 파일을 파싱해 회계 항목을 정규화하고, KRX 시가총액/거래대금 및 가격 데이터를 결합하여 팩터(SIZE, BM, GP/A, TURNOVER, MOM)를 산출한 뒤, 7월 리밸런싱 규칙으로 백테스트까지 수행하는 일련의 파이프라인을 담고 있습니다.
+이 저장소는 전자공시(DART) 텍스트 파일을 파싱해 회계 항목을 정규화하고,시가총액/거래대금 및 가격 데이터를 결합하여 팩터를 산출한 뒤, 7월 리밸런싱 규칙으로 백테스트까지 수행하는 일련의 파이프라인을 담고 있습니다.
 
 주요 구성은 다음과 같습니다.
 - 원천: DART 텍스트(.txt) 대용량 파일 https://opendart.fss.or.kr/disclosureinfo/fnltt/dwld/main.do
 - 정제: IFRS 태그/라벨 정규화, 연결/별도 판별, 비금융 업종 제외, 12월 결산 필터 등
 - 조인: KRX 시가총액/거래대금(pykrx), 월초 수정종가(FinanceDataReader), 벤치마크(yfinance)
-- 팩터: SIZE, BM, GP_A, TURNOVER, MOM(J,S)
+- 팩터: SIZE, BM, GP_A, TURNOVER, MOM(J,S) 등 (추가예정)
 - 운용: 7월 리밸런싱, 팩터 스코어 표준화/윈저라이즈, 유니버스 필터링, 동/가중평균, 벤치마크 비교
 
 > 대용량 데이터(.txt, .parquet 등)는 .gitignore에 의해 버전관리에서 제외됩니다. 코드만 저장소에 포함됩니다.
