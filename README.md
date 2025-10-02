@@ -1,4 +1,4 @@
-﻿# Finance Factor Investing (KRX) — 재무제표→팩터→백테스트 파이프라인
+# Finance Factor Investing (KRX) — 재무제표→팩터→백테스트 파이프라인
 
 이 저장소는 전자공시(DART) 텍스트 파일을 파싱해 회계 항목을 정규화하고, KRX 시가총액/거래대금 및 가격 데이터를 결합하여 팩터(SIZE, BM, GP/A, TURNOVER, MOM)를 산출한 뒤, 7월 리밸런싱 규칙으로 백테스트까지 수행하는 일련의 파이프라인을 담고 있습니다.
 
@@ -60,25 +60,25 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
 
 ## 엔드투엔드 실행 순서
 
-1) 원천 통합 — `코드/1_재무제표정리.py`
+### 1) 원천 통합 — `코드/1_재무제표정리.py`
 - cp949 텍스트(.txt) 다건을 배치로 읽어서 `ALL.parquet` 저장
 - 헤더 정리, 공백/토큰 정규화 포함
 
-2) 표준화/주재무 플래그 — `코드/2_검증/표준화.py`
+### 2) 표준화/주재무 플래그 — `코드/2_검증/표준화.py`
 - 보고서명 정규화, 연결/별도 판별(`연결`, `별도`, `기타`)
 - 기업×보고기간 단위로 주재무(연결 우선, 없으면 별도) True 설정
 
-3) 주재무·IFRS·시장 필터 — `코드/3_주재무IFRS추출.py`
+### 3) 주재무·IFRS·시장 필터 — `코드/3_주재무IFRS추출.py`
 - 주재무 + 목표 보고서(예: 연결재무제표) + 대상시장(KOSPI/KOSDAQ) 필터링
 
-4) IFRS 태그 정규화 — `코드/4_주재무IFRS세분화정리.py`
+### 4) IFRS 태그 정규화 — `코드/4_주재무IFRS세분화정리.py`
 - `ifrs_`/`ifrs-full_` 접두 제거 → `계정코드_정규화` 열 추가 저장
 
-5) 회계 항목 추출 — `코드/5_팩터추출.py`
+### 5) 회계 항목 추출 — `코드/5_팩터추출.py`
 - 비금융 업종 제외, 12월 결산만 사용
 - 지배주주지분, 매출총이익 등 핵심 항목 추출(공식 IFRS 태그 → 한글 라벨 → 대체식 순)로 스켈레톤 구성
 
-6) 시총/거래대금 결합 — `코드/6_시총정보.py`
+### 6) 시총/거래대금 결합 — `코드/6_시총정보.py`
 - pykrx 기준 매년 6월 마지막 영업일 스냅샷: 시가총액, 거래대금
 - 다음 해(리밸런싱 연도) 팩터와 매칭하여 계산
   - `SIZE = ln(시가총액)`
@@ -86,14 +86,14 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
   - `GP_A = 매출총이익 / 자산총계`
   - `TURNOVER = 거래대금 / 시가총액`
 
-7) 월초 수정종가 — `코드/7_수정주가.py`
+### 7) 월초 수정종가 — `코드/7_수정주가.py`
 - FinanceDataReader로 종목별 일별 → 월초 Close 집계
 
-8) 모멘텀 병합 — `코드/8_모멘텀지표추가.py`
+### 8) 모멘텀 병합 — `코드/8_모멘텀지표추가.py`
 - 수익률로 MOM(J,S) 계산: `exp(sum(log(1+r))) - 1` (J개월 누적, S개월 스킵)
 - 7월 스냅샷을 팩터 테이블에 병합(`..._withMOM.parquet`)
 
-9) 백테스트 — `코드/9_백테스트.py`
+### 9) 백테스트 — `코드/9_백테스트.py`
 - 입력: `월초_수정종가.parquet`, `팩터통합_최종_withMOM.parquet`
 - 파라미터: 팩터 리스트, 유니버스 필터, 표준화(전체/산업별 zscore/rank), 윈저라이즈, 결합방식(교집합/스코어), 가중방식(동/스코어), 7월 리밸런싱
 - 산출: 월수익률, NAV, 벤치마크(KOSPI) 비교 차트 및 로그
@@ -156,8 +156,4 @@ python 코드/9_백테스트.py
 
 ## 백테스트 결과
 
-- 아래 이미지는 `코드/9_백테스트.py` 실행 시 `docs/portfolio_vs_benchmark.png`로 자동 저장됩니다.
-- 수치 요약은 `docs/backtest_summary.md`에서 확인할 수 있습니다.
-
 ![Portfolio vs Benchmark](docs/portfolio_vs_benchmark.png)
-
