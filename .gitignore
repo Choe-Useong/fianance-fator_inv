@@ -1,4 +1,4 @@
-Ôªø# Byte-compiled / cache
+# Byte-compiled / cache
 __pycache__/
 *.py[cod]
 *.pyo
@@ -45,3 +45,8 @@ docs_cache/
 # Keep this file tracked
 !.gitignore
 
+
+# Exclude specific files and legacy folder
+∑π∞≈Ω√/
+**/Figure_1.png
+**/_µ•¿Ã≈Õ»Æ¿Œ.py
