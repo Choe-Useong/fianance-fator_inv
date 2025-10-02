@@ -119,7 +119,7 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
 ```
 python 肄붾뱶/1_?щТ?쒗몴?뺣━.py
 python 肄붾뱶/2_寃利??쒖???py
-python 肄붾뱶/3_二쇱옱臾퀹FRS異붿텧.py
+python 코드/3_주재무판별.py
 python 肄붾뱶/4_二쇱옱臾퀹FRS?몃텇?붿젙由?py
 python 肄붾뱶/5_?⑺꽣異붿텧.py
 python 肄붾뱶/6_?쒖킑?뺣낫.py
@@ -157,4 +157,5 @@ python 肄붾뱶/9_諛깊뀒?ㅽ듃.py
 ## 諛깊뀒?ㅽ듃 寃곌낵
 
 ![Portfolio vs Benchmark](docs/portfolio_vs_benchmark.png)
+
 
