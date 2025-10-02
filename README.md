@@ -3,7 +3,7 @@
 이 저장소는 전자공시(DART) 텍스트 파일을 파싱해 회계 항목을 정규화하고, KRX 시가총액/거래대금 및 가격 데이터를 결합하여 팩터(SIZE, BM, GP/A, TURNOVER, MOM)를 산출한 뒤, 7월 리밸런싱 규칙으로 백테스트까지 수행하는 일련의 파이프라인을 담고 있습니다.
 
 주요 구성은 다음과 같습니다.
-- 원천: DART 텍스트(.txt) 대용량 파일
+- 원천: DART 텍스트(.txt) 대용량 파일 https://opendart.fss.or.kr/disclosureinfo/fnltt/dwld/main.do
 - 정제: IFRS 태그/라벨 정규화, 연결/별도 판별, 비금융 업종 제외, 12월 결산 필터 등
 - 조인: KRX 시가총액/거래대금(pykrx), 월초 수정종가(FinanceDataReader), 벤치마크(yfinance)
 - 팩터: SIZE, BM, GP_A, TURNOVER, MOM(J,S)
