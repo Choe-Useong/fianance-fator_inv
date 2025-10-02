@@ -1,0 +1,47 @@
+﻿# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Notebooks and checkpoints
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Build / logs
+*.log
+
+# Large data and caches
+utf8_tsv/
+docs_cache/
+*.parquet
+*.feather
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.zip
+*.7z
+*.gz
+*.bz2
+*.xz
+*.tar
+*.pickle
+*.pkl
+*.h5
+*.hdf5
+*.npz
+*.npy
+
+# All those huge TXT datasets
+*.txt
+
+# Keep code directory tracked
+
+# Keep this file tracked
+!.gitignore
+
