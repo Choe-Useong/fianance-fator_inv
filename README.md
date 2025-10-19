@@ -44,7 +44,7 @@ pip install pandas numpy pyarrow matplotlib pykrx FinanceDataReader yfinance
 
 ---
 
-## 엔드투엔드 실행 순서
+## 실행 순서
 
 ### 1) 원본데이터 통합 — `코드/1_재무제표정리.py`
 - cp949 텍스트(.txt) 다건을 배치로 읽어서 `ALL.parquet` 저장
