@@ -368,10 +368,10 @@ def get_gross_profit(sub: pd.DataFrame) -> float:
       ④ 항목명 '매출액' - '매출원가'
           - IFRS 코드가 누락된 경우 한글 항목명을 이용해 간접 계산.
 
-      ⑤ 보조: '매출액 - (재료비 + 인건비)'
+      ⑤ 보조: '매출액 - 재료비'
           - 원가 세부 항목이 분리되어 있는 경우 이를 합산하여 매출총이익 근사값 계산.
-          - IFRS 코드 'RawMaterialsAndConsumablesUsed' / 'EmployeeBenefitsExpense' 또는
-            한글 항목명 '재료비', '인건비'를 기반으로 계산.
+          - IFRS 코드 'RawMaterialsAndConsumablesUsed'  또는
+            한글 항목명 '인건비'를 기반으로 계산.
 
       ⑥ 최후 fallback: '영업수익 - 영업비용'
           - 매출액/원가 항목이 없고, 영업수익·영업비용만 존재할 경우 사용.
@@ -507,52 +507,81 @@ owner_ni_labels = [
             '지분법적용대상인관계기업의당기순손익에대한지분'
         ]
 
+
+
+#################################################
+# 지배주주순이익(Profit attributable to owners) 추출 함수
+# - 제표종류앞 기준으로 손익계산서 우선 적용
+#################################################
+
 def get_owner_net_income(sub: pd.DataFrame) -> float:
     """
     지배주주순이익 추출: 연결이 존재하면 연결 기준, 없으면 별도 기준.
+    제표종류앞 기준으로 손익계산서부터 우선 적용, 없으면 손익계산서가 포함된 항목, 그래도 없으면 포괄손익계산서 사용.
+
     우선순위
-      - 연결: ProfitLossAttributableToOwnersOfParent → ProfitLoss - ProfitLossAttributableToNoncontrollingInterests → 라벨(지배주주순이익 계열) → 라벨(당기순이익/연결당기순이익) - 비지배주주순이익 → ProfitLoss
-      - 별도: ProfitLoss → 라벨(당기순이익/순이익)
+      - 연결:
+          ProfitLossAttributableToOwnersOfParent
+          → ProfitLoss - ProfitLossAttributableToNoncontrollingInterests
+          → 라벨(지배주주순이익 계열)
+          → 라벨(당기순이익/연결당기순이익) - 비지배주주순이익
+          → ProfitLoss
+      - 별도:
+          ProfitLoss
+          → 라벨(당기순이익/순이익)
     """
+
+    def select_income_statement(sub: pd.DataFrame) -> pd.DataFrame:
+        """손익계산서 우선 선택 (제표종류앞 기준)."""
+        if "제표종류앞" not in sub.columns:
+            return pd.DataFrame()
+
+        # 1) 손익계산서 정확히 일치
+        exact = sub[sub["제표종류앞"].astype(str).str.strip() == "손익계산서"]
+        if not exact.empty:
+            return exact
+
+        # 2) 손익계산서가 포함된 항목 (예: 연결손익계산서, 손익계산서(별도))
+        contains_income = sub[sub["제표종류앞"].astype(str).str.contains("손익계산서", na=False)]
+        if not contains_income.empty:
+            return contains_income
+
+        # 3) 포괄손익계산서 계열 (예: 연결포괄손익계산서, 포괄손익계산서(별도))
+        contains_comp = sub[sub["제표종류앞"].astype(str).str.contains("포괄손익계산서", na=False)]
+        if not contains_comp.empty:
+            return contains_comp
+
+        # 없으면 빈 DF 반환
+        return pd.DataFrame()
+
     has_consol = (sub["연결구분"] == "연결").any()
 
     if has_consol:
         sub = sub[sub["연결구분"] == "연결"]
-        # 손익/포괄손익 재무제표만 사용 (없으면 계산하지 않음)
-        stmt_col_candidates = ["재무제표명", "재무제표종류", "재무제표구분"]
-        stmt_col_pref = next((c for c in stmt_col_candidates if c in sub.columns), None)
-        if not stmt_col_pref:
-            return pd.NA
-        sub_stmt = sub[sub[stmt_col_pref].astype(str).str.contains("손익", na=False)]
-        if sub_stmt.empty:
-            return pd.NA
-        sub = sub_stmt
 
+        # 손익계산서 우선 선택
+        sub = select_income_statement(sub)
+        if sub.empty:
+            return pd.NA
+
+        # IFRS 코드 1순위: 지배기업 소유주 귀속 이익
         direct = sub.loc[sub["항목코드_통일"] == "ProfitLossAttributableToOwnersOfParent", "당기"].dropna()
         if len(direct) > 0:
             return float(direct.iloc[0])
 
+        # ProfitLoss - 비지배주주귀속손익
         total = sub.loc[sub["항목코드_통일"] == "ProfitLoss", "당기"].dropna()
         nci_attr = sub.loc[sub["항목코드_통일"] == "ProfitLossAttributableToNoncontrollingInterests", "당기"].dropna()
         if len(total) > 0 and len(nci_attr) > 0:
             return float(total.iloc[0] - nci_attr.iloc[0])
 
+        # 지배주주순이익 계열 라벨
         mask = sub["항목명_clean"].isin(owner_ni_labels)
         direct_label = sub.loc[mask, "당기"].dropna()
         if len(direct_label) > 0:
             return float(direct_label.iloc[0])
 
-        # (3b) 손익/포괄손익표 내 '지배주주지분' 계열 라벨을 순이익으로 간주
-        stmt_col_candidates = ["재무제표명", "재무제표종류", "재무제표구분"]
-        stmt_col = next((c for c in stmt_col_candidates if c in sub.columns), None)
-        if stmt_col:
-            if sub[stmt_col].astype(str).str.contains("손익", na=False).any():
-                eq_like_mask = sub["항목명_clean"].isin(owner_labels)
-                eq_like = sub.loc[eq_like_mask, "당기"].dropna()
-                if len(eq_like) > 0:
-                    return float(eq_like.iloc[0])
-
-        # '당기순이익(손실)' 같은 케이스 포함을 위해 부분매칭 사용
+        # '당기순이익' 또는 '연결당기순이익' 계열
         total_label = sub.loc[
             sub["항목명_clean"].isin([
                 "연결당기순이익","연결당기순이익(손실)","연결당기순이익(순손실)",
@@ -561,9 +590,9 @@ def get_owner_net_income(sub: pd.DataFrame) -> float:
             ]),
             "당기"
         ].dropna()
+
         if len(total_label) > 0:
-            if len(nci_attr) > 0:
-                return float(total_label.iloc[0] - nci_attr.iloc[0])
+            # 비지배주주순이익 차감
             nci_label = sub.loc[
                 sub["항목명_clean"].isin([
                     "비지배주주순이익","비지배주주순이익(손실)","비지배주주순이익(순손실)",
@@ -581,32 +610,21 @@ def get_owner_net_income(sub: pd.DataFrame) -> float:
 
         return pd.NA
 
+    # 별도 재무제표 처리
     else:
         sub = sub[sub["연결구분"] == "별도"]
-        # 손익/포괄손익 재무제표만 사용 (없으면 계산하지 않음)
-        stmt_col_candidates = ["재무제표명", "재무제표종류", "재무제표구분"]
-        stmt_col_pref = next((c for c in stmt_col_candidates if c in sub.columns), None)
-        if not stmt_col_pref:
+
+        # 손익계산서 우선 선택
+        sub = select_income_statement(sub)
+        if sub.empty:
             return pd.NA
-        sub_stmt = sub[sub[stmt_col_pref].astype(str).str.contains("손익", na=False)]
-        if sub_stmt.empty:
-            return pd.NA
-        sub = sub_stmt
+
+        # IFRS 코드 ProfitLoss
         direct = sub.loc[sub["항목코드_통일"] == "ProfitLoss", "당기"].dropna()
         if len(direct) > 0:
             return float(direct.iloc[0])
 
-        # (1b) 손익/포괄손익표 내 '지배주주지분' 계열 라벨을 순이익으로 간주
-        stmt_col_candidates = ["재무제표명", "재무제표종류", "재무제표구분"]
-        stmt_col = next((c for c in stmt_col_candidates if c in sub.columns), None)
-        if stmt_col:
-            if sub[stmt_col].astype(str).str.contains("손익", na=False).any():
-                eq_like_mask = sub["항목명_clean"].isin(owner_labels)
-                eq_like = sub.loc[eq_like_mask, "당기"].dropna()
-                if len(eq_like) > 0:
-                    return float(eq_like.iloc[0])
-
-        # 별도에서도 '당기순이익(손실)' 등 부분 포함 허용
+        # 항목명 라벨 기반 당기순이익/순이익
         label = sub.loc[
             sub["항목명_clean"].isin([
                 "당기순이익","당기순이익(손실)","당기순이익(순손실)",
@@ -618,6 +636,7 @@ def get_owner_net_income(sub: pd.DataFrame) -> float:
             return float(label.iloc[0])
 
         return pd.NA
+
 
 
 # 회사 × 결산일 그룹별 적용 (지배주주순이익)
