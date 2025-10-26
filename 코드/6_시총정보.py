@@ -2,6 +2,8 @@ import pandas as pd
 from pykrx import stock
 from datetime import datetime
 import numpy as np
+import re
+
 
 # 1) 기존 팩터 데이터 불러오기
 FILE_PATH = r"C:\Users\admin\Desktop\재무제표정리\통합재무\팩터재무데이터.parquet"
@@ -42,9 +44,6 @@ print(df_marketcap.head())
 print(df_marketcap.tail())
 print(df_marketcap["연도"].unique())
 
-
-import re
-import pandas as pd
 
 # 1) 종목코드 정규화
 def clean_ticker(x):
