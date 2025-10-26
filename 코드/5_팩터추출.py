@@ -695,8 +695,8 @@ def get_operating_profit(sub: pd.DataFrame) -> float:
     else:
         return pd.NA
 
-    # 4) IFRS 코드 'OperatingProfitLoss' 직접 매칭
-    op = sub.loc[sub["항목코드_통일"] == "OperatingProfitLoss", "당기"].dropna()
+    # 4)  코드 'OperatingIncomeLoss' 직접 매칭
+    op = sub.loc[sub["항목코드_통일"] == "OperatingIncomeLoss", "당기"].dropna()
     if len(op) > 0:
         return float(op.iloc[0])
 
