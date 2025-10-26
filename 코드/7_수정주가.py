@@ -53,7 +53,7 @@ for i, ticker in enumerate(tickers, 1):
 # -------------------------
 df_monthly_price = pd.concat(price_list, ignore_index=True)
 
-OUT_FILE = r"C:\Users\admin\Desktop\재무제표정리\통합재무\월별첫영업일가격_YF_NAVER.parquet"
+OUT_FILE = r"C:\Users\admin\Desktop\재무제표정리\통합재무\월별첫영업일가격.parquet"
 df_monthly_price.to_parquet(OUT_FILE, engine="pyarrow", index=False)
 
 print("저장 완료:", OUT_FILE)
