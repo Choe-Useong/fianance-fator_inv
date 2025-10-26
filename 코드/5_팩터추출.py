@@ -59,6 +59,7 @@ skeleton["지배주주지분"] = pd.Series(dtype="Float64")
 skeleton["매출총이익"] = pd.Series(dtype="Float64")
 skeleton["자산총계"] = pd.Series(dtype="Float64")
 skeleton["지배주주순이익"] = pd.Series(dtype="Float64")
+skeleton["영업이익"] = pd.Series(dtype="Float64")
 
 print(skeleton.head())
 
@@ -66,6 +67,19 @@ print(skeleton.head())
 
 
 ##########################################################################
+
+
+
+
+
+
+#################################################
+# 지배주주지분 추출 함수
+################################################
+
+
+
+
 
 # 1) 지배주주지분 관련 라벨 후보
 owner_labels = [
@@ -216,6 +230,15 @@ print(na_list.head(20))
 
 
 
+
+
+#################################################
+# 자산총계 추출 함수
+################################################
+
+
+
+
 def get_total_assets(sub: pd.DataFrame) -> float:
     """
     특정 회사×결산기준일 단위(sub DataFrame)에서 '자산총계' 값을 추출한다.
@@ -300,6 +323,24 @@ na_cases = skeleton[na_or_non_numeric]
 na_list = na_cases.index.to_frame(index=False)
 print("자산총계 NA/빈칸/문자 케이스 수:", len(na_list))
 print(na_list.head(20))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#################################################
+# 매출총이익 추출 함수
+################################################
 
 
 
@@ -444,6 +485,28 @@ print(na_list.head(20))
 
 
 
+
+
+
+
+
+
+#################################################
+# 지배주주순이익 추출 함수
+################################################
+
+
+
+owner_ni_labels = [
+            "지배주주순이익","지배주주순이익(손실)","지배주주순이익(순손실)",
+            "지배기업소유주순이익","지배기업소유주순이익(손실)","지배기업소유주순이익(순손실)",
+            "지배기업의소유주에게귀속되는당기순이익","지배기업의소유주에게귀속되는당기순이익(손실)","지배기업의소유주에게귀속되는당기순이익(순손실)",
+            "지배기업소유주에게귀속되는순이익","지배기업소유주에게귀속되는순이익(손실)","지배기업소유주에게귀속되는순이익(순손실)",
+            "지배주주에귀속되는당기순이익","지배주주에귀속되는당기순이익(손실)","지배주주에귀속되는당기순이익(순손실)",
+            "지배기업주주지분에귀속되는당기순이익","지배기업주주지분에귀속되는당기순이익(손실)","지배기업주주지분에귀속되는당기순이익(순손실)",
+            '지분법적용대상인관계기업의당기순손익에대한지분'
+        ]
+
 def get_owner_net_income(sub: pd.DataFrame) -> float:
     """
     지배주주순이익 추출: 연결이 존재하면 연결 기준, 없으면 별도 기준.
@@ -474,15 +537,6 @@ def get_owner_net_income(sub: pd.DataFrame) -> float:
         if len(total) > 0 and len(nci_attr) > 0:
             return float(total.iloc[0] - nci_attr.iloc[0])
 
-        owner_ni_labels = [
-            "지배주주순이익","지배주주순이익(손실)","지배주주순이익(순손실)",
-            "지배기업소유주순이익","지배기업소유주순이익(손실)","지배기업소유주순이익(순손실)",
-            "지배기업의소유주에게귀속되는당기순이익","지배기업의소유주에게귀속되는당기순이익(손실)","지배기업의소유주에게귀속되는당기순이익(순손실)",
-            "지배기업소유주에게귀속되는순이익","지배기업소유주에게귀속되는순이익(손실)","지배기업소유주에게귀속되는순이익(순손실)",
-            "지배주주에귀속되는당기순이익","지배주주에귀속되는당기순이익(손실)","지배주주에귀속되는당기순이익(순손실)",
-            "지배기업주주지분에귀속되는당기순이익","지배기업주주지분에귀속되는당기순이익(손실)","지배기업주주지분에귀속되는당기순이익(순손실)",
-            '지분법적용대상인관계기업의당기순손익에대한지분'
-        ]
         mask = sub["항목명_clean"].isin(owner_ni_labels)
         direct_label = sub.loc[mask, "당기"].dropna()
         if len(direct_label) > 0:
@@ -584,6 +638,122 @@ print(na_list.head(20))
 
 
 
+
+
+
+
+
+
+#################################################
+# 영업이익(Operating Profit) 추출 함수 — 손익계산서 우선 적용 버전
+#################################################
+
+
+operating_labels = [
+        "영업이익", "영업손실", "영업이익손실", "영업이익(손실)",
+        "영업손익", "영업손익합계", "영업활동이익",
+        "영업활동으로인한이익", "영업이익또는손실",
+        "영업손익(손실)", "영업이익또는손실금액"
+    ]
+
+
+def get_operating_profit(sub: pd.DataFrame) -> float:
+    """
+    특정 회사×결산기준일 단위(sub DataFrame)에서 '영업이익'만 추출한다.
+    
+    [로직 구조]
+        1) '제표종류앞' 필터링
+            - 손익계산서/포괄손익계산서가 아닌 데이터 제거.
+            - '제표종류앞' 컬럼이 없거나 해당 데이터가 없으면 NA 반환.
+    
+        2) 손익계산서 우선 사용, 없으면 포괄손익계산서 대체
+    
+        3) IFRS 코드 'OperatingProfitLoss' 우선 사용
+    
+        4) 항목명 기반 라벨 매칭 ('영업이익' 계열)
+    
+        5) 매출총이익 - 판매비와관리비 계산 (간접 추정)
+    
+        6) 항목명 기반 근사치 ('매출총이익' - '판매비와관리비')
+    
+        7) 모든 단계 실패 시 pd.NA 반환
+    """
+
+    # 1) 제표종류앞 컬럼이 없으면 처리 불가
+    if "제표종류앞" not in sub.columns:
+        return pd.NA
+
+    # 2) 손익계산서 / 포괄손익계산서 각각 필터링
+    sub_income = sub[sub["제표종류앞"].astype(str).str.contains("손익계산서", na=False)]
+    sub_comprehensive = sub[sub["제표종류앞"].astype(str).str.contains("포괄손익계산서", na=False)]
+
+    # 3) 손익계산서 우선 사용, 없으면 포괄손익계산서 대체
+    if not sub_income.empty:
+        sub = sub_income
+    elif not sub_comprehensive.empty:
+        sub = sub_comprehensive
+    else:
+        return pd.NA
+
+    # 4) IFRS 코드 'OperatingProfitLoss' 직접 매칭
+    op = sub.loc[sub["항목코드_통일"] == "OperatingProfitLoss", "당기"].dropna()
+    if len(op) > 0:
+        return float(op.iloc[0])
+
+    # 5) 항목명 기반 매칭 (가능한 라벨 세트)
+    #    IFRS 코드 누락 시, 기업이 임의로 작성한 유사 표현을 커버
+
+    op_label = sub.loc[sub["항목명_clean"].isin(operating_labels), "당기"].dropna()
+    if len(op_label) > 0:
+        return float(op_label.iloc[0])
+
+    # 6) 매출총이익 - 판매비와관리비 계산 (간접 추정)
+    gp = sub.loc[sub["항목코드_통일"] == "GrossProfit", "당기"].dropna()
+    sga = sub.loc[sub["항목코드_통일"] == "SellingGeneralAdministrativeExpenses", "당기"].dropna()
+    if len(gp) > 0 and len(sga) > 0:
+        return float(gp.iloc[0] - sga.iloc[0])
+
+    # 7) 항목명 기반 근사치 ('매출총이익' - '판매비와관리비')
+    gp_label = sub.loc[sub["항목명_clean"].str.contains("매출총이익", na=False), "당기"].dropna()
+    sga_label = sub.loc[sub["항목명_clean"].str.contains("판매비와관리비", na=False), "당기"].dropna()
+    if len(gp_label) > 0 and len(sga_label) > 0:
+        return float(gp_label.iloc[0] - sga_label.iloc[0])
+
+    # 8) 모든 경로 실패 시 NA 반환
+    return pd.NA
+
+
+#################################################
+# 회사×결산일 그룹별 적용 및 진단
+#################################################
+
+oper_profit_vals = (
+    df_non_fin.groupby(["종목코드", "결산기준일"])
+              .apply(get_operating_profit)
+)
+
+skeleton.loc[oper_profit_vals.index, "영업이익"] = oper_profit_vals.values
+
+col = pd.to_numeric(skeleton["영업이익"], errors="coerce")
+na_or_non_numeric = col.isna()
+print(na_or_non_numeric.sum(), "개 NA/빈칸/문자값")
+
+na_cases = skeleton[na_or_non_numeric]
+na_list = na_cases.index.to_frame(index=False)
+print("영업이익 NA 케이스 수:", len(na_list))
+print(na_list.head(20))
+
+
+
+
+
+
+
+
+
+
+
+
 # ----------------------------------
 # 스켈레톤 저장하기
 # ----------------------------------
@@ -593,3 +763,8 @@ OUT_FILE = r"C:\Users\admin\Desktop\재무제표정리\통합재무\팩터재무
 skeleton.to_parquet(OUT_FILE, engine="pyarrow", compression="snappy")
 
 print(f"완료! {OUT_FILE} 저장됨")
+
+
+
+
+###########################################################################
