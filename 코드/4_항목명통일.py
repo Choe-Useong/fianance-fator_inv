@@ -18,6 +18,7 @@ df["항목코드_통일"] = (
     df["항목코드"]
     .str.replace("ifrs-full_", "", regex=False)
     .str.replace("ifrs_", "", regex=False)
+    .str.replace("dart_", "", regex=False)
 )
 
 # 4) 저장 (새 파일로 저장 권장)
