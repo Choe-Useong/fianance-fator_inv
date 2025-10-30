@@ -51,11 +51,12 @@ for i, ticker in enumerate(tickers, 1):
                 continue
 
     # 월별 첫 영업일 기준 종가
+    df_price.index.name = "날짜"
     monthly = df_price.resample("MS").first()[["Price"]].copy()
     monthly["종목코드"] = ticker
     monthly["source"] = source
     monthly.reset_index(inplace=True)
-    monthly.rename(columns={"Date": "날짜", "Price": "종가"}, inplace=True)
+    monthly.rename(columns={"Price": "종가"}, inplace=True)
     price_list.append(monthly)
 
     print(f"{i}/{len(tickers)} {ticker} 완료 ({len(monthly)}건, 소스={source})")
