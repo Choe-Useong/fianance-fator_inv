@@ -19,8 +19,8 @@ for i, ticker in enumerate(tickers, 1):
     try:
         # 1단계: YAHOO (코스피: .KS)
         df_price = fdr.DataReader(f"YAHOO:{ticker}.KS", start_date, end_date)
-        if not df_price.empty and "Adj Close" in df_price.columns:
-            df_price["Price"] = df_price["Adj Close"]
+        if not df_price.empty and "Close" in df_price.columns:
+            df_price["Price"] = df_price["Close"]
             source = "YAHOO_KS"
         else:
             raise ValueError("YAHOO_KS empty")
@@ -29,8 +29,8 @@ for i, ticker in enumerate(tickers, 1):
         try:
             # 2단계: YAHOO (코스닥: .KQ)
             df_price = fdr.DataReader(f"YAHOO:{ticker}.KQ", start_date, end_date)
-            if not df_price.empty and "Adj Close" in df_price.columns:
-                df_price["Price"] = df_price["Adj Close"]
+            if not df_price.empty and "Close" in df_price.columns:
+                df_price["Price"] = df_price["Close"]
                 source = "YAHOO_KQ"
             else:
                 raise ValueError("YAHOO_KQ empty")
