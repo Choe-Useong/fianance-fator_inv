@@ -1,4 +1,4 @@
-# Finance Factor Investing — 재무제표 전처리 → 팩터추출 → 백테스트 파이프라인
+# Finance Factor Investing
 
 이 저장소는 전자공시(DART) 텍스트 파일을 파싱해 회계 항목을 정규화하고,
 시가총액/거래대금 및 가격 데이터를 결합하여 팩터를 산출한 뒤,
